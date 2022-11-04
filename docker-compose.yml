@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+    nginx:
+        container_name: bmet-nginx
+        image: nginx:alpine
+        ports:
+            - "80:80"
+        volumes:
+            - .:/var/www/html
+            - ./docker/local/nginx/app.conf:/etc/nginx/conf.d/default.conf
+        restart: always
+        links:
+            - app
+        networks:
+            - bmet-network
+    app:
+        container_name: bmet
+        build: ./docker/local/php
+        restart: always
+        volumes:
+            - .:/var/www/html
+        links:
+            - redis
+        networks:
+            - bmet-network
+    mysql:
+        container_name: bmet-mysql
+        image: mysql:5.7
+        restart: unless-stopped
+        env_file:
+            - ".env"
+        environment:
+            - MYSQL_DATABASE=${DB_DATABASE}
+            - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+            - MYSQL_PASSWORD=${DB_PASSWORD}
+        ports:
+            - "3317:3306"
+        volumes:
+            - ./docker/local/mysql/data:/var/lib/mysql
+        networks:
+            - bmet-network
+    redis:
+        container_name: bmet-redis
+        image: redis
+        ports:
+            - ${DB_PORT}:6379
+        restart: unless-stopped
+        networks:
+            - bmet-network
+
+networks:
+    bmet-network:
+        name: bmet-network
+        attachable: true
+
